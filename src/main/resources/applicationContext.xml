@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/jdbc
+	http://www.springframework.org/schema/jdbc/spring-jdbc-3.0.xsd
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+    <!-- Some beans here -->
+
+    <!-- JMX related bean definitions -->
+    <bean id="exporter" class="org.springframework.jmx.export.MBeanExporter">
+        <property name="assembler" ref="assembler" />
+        <property name="namingStrategy" ref="namingStrategy" />
+        <property name="autodetect" value="true" />
+    </bean>
+	
+    <bean id="assembler"       class="org.springframework.jmx.export.assembler.MetadataMBeanInfoAssembler">
+        <property name="attributeSource" ref="jmxAttributeSource" />
+    </bean>
+	
+    <bean id="namingStrategy" 
+          class="org.springframework.jmx.export.naming.MetadataNamingStrategy">
+        <property name="attributeSource" ref="jmxAttributeSource" />
+    </bean>
+	
+    <bean id="jmxAttributeSource" class="org.springframework.jmx.export.annotation.AnnotationJmxAttributeSource">
+    </bean>
+
+    <!-- Exposing Log4j over JMX -->
+    <bean name="jmxLog4j" class="org.apache.log4j.jmx.HierarchyDynamicMBean">
+    </bean>
+    
+    <!-- Exposing Hibernate Statistics over JMX -->
+    <bean id="sessionFactory" class="org.springframework.orm.hibernate3.LocalSessionFactoryBean">
+		<property name="configurationClass" value="org.hibernate.cfg.AnnotationConfiguration" />
+  		<property name="configLocation" value="classpath:hibernate.cfg.xml" />
+  
+  		<property name="dataSource">
+    		<ref bean="dataSource"/>
+  		</property>
+  		
+  		<property name="hibernateProperties">
+      		<props>
+      			<prop key="hibernate.dialect">org.hibernate.dialect.HSQLDialect</prop>
+      			<prop key="hibernate.connection.charSet">utf8</prop>
+				<prop key="hibernate.hibernate.query.substitutions">true 1, false 0</prop>
+        		<prop key="hibernate.show_sql">true</prop>
+        		<prop key="hibernate.hbm2ddl.auto">update</prop>
+        		<prop key="hibernate.generate_statistics">true</prop>
+        		<prop key="hibernate.jdbc.batch_size">25</prop>
+      		</props>
+    	</property>
+	</bean>
+	
+	<jdbc:embedded-database id="dataSource" type="HSQL"></jdbc:embedded-database>
+		
+	<bean id="transactionManager" class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+    	<property name="sessionFactory" ref="sessionFactory"/>
+  	</bean>  
+  	
+  	<bean name="hibernateStatistics" class="org.hibernate.jmx.StatisticsService">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+</beans>
